@@ -1,63 +1,90 @@
-import { Button } from '@/components/Button'
-import { HomeHeader } from '@/components/HomeHeader'
-import { List } from '@/components/List'
-import { Target } from '@/components/Target'
-import { router } from 'expo-router'
-import { StatusBar, View } from 'react-native'
+import React, { useEffect, useState } from 'react';
+import { View, Text, Button, FlatList, StyleSheet } from 'react-native';
+import { useTargetDatabase, Target } from '../database/useTargetDatabase';
 
-const summary = {
-  total: 'R$ 2.680,00',
-  input: { label: 'Entradas', value: 'R$ 6.184,90' },
-  output: { label: 'Saídas', value: '-R$ 883,65' },
-}
+export default function Home() {
+  const targetDatabase = useTargetDatabase();
+  const [targets, setTargets] = useState<Target[]>([]);
 
-const targets = [
-  {
-    id: '1',
-    name: 'Apple Watch',
-    percentage: '50%',
-    current: 'R$ 580,00',
-    target: 'R$ 1.790,00',
-  },
-  {
-    id: '2',
-    name: 'Comprar uma cadeira ergonômica',
-    percentage: '75%',
-    current: 'R$ 900,00',
-    target: 'R$ 1.200,00',
-  },
-  {
-    id: '3',
-    name: 'Comprar uma cadeira ergonômica',
-    percentage: '75%',
-    current: 'R$ 1.200,00',
-    target: 'R$ 3.000,00',
-  },
-]
+  async function loadData() {
+    try {
+      const data = await targetDatabase.getAll();
+      setTargets(data);
+    } catch (error) {
+      console.error("Erro ao carregar dados:", error);
+    }
+  }
 
-export default function Index() {
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  async function handleAddTarget() {
+    try {
+      await targetDatabase.create("Comprar Carro", 50000);
+      loadData(); 
+    } catch (error) {
+      console.error("Erro ao inserir:", error);
+    }
+  }
+
   return (
-    <View style={{ flex: 1 }}>
-      <StatusBar barStyle="light-content" />
-      <HomeHeader data={summary} />
-
-      <List
-        title="Metas"
-        data={targets}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <Target
-            data={item}
-            onPress={() => router.navigate(`/in-progress/${item.id}`)}
-          />
-        )}
-        emptyMessage="Nenhuma meta. Toque em nova meta para criar."
-        containerStyle={{ paddingHorizontal: 24 }}
+    <View style={styles.container}>
+      <Text style={styles.title}>As Minhas Metas</Text>
+      
+      <Button 
+        title="Adicionar Meta de Teste" 
+        onPress={handleAddTarget} 
+        color="#10b981" 
       />
-
-      <View style={{ padding: 24, paddingBottom: 32 }}>
-        <Button title="Nova meta" onPress={() => router.navigate('/target')} />
-      </View>
+      
+      <FlatList 
+        data={targets}
+        keyExtractor={(item) => String(item.id)}
+        style={{ marginTop: 20 }}
+        renderItem={({ item }) => (
+          <View style={styles.item}>
+            <Text style={styles.itemName}>{item.name}</Text>
+            <Text style={styles.itemDetails}>
+              Objetivo: {item.amount} | Acumulado: {item.accumulated}
+            </Text>
+          </View>
+        )}
+      />
     </View>
-  )
+  );
 }
+
+const styles = StyleSheet.create({
+  container: { 
+    flex: 1, 
+    padding: 20, 
+    marginTop: 50,
+    backgroundColor: '#0f172a' 
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#f8fafc',
+    marginBottom: 20,
+    textAlign: 'center'
+  },
+  item: { 
+    padding: 15, 
+    borderBottomWidth: 1, 
+    borderColor: '#334155',
+    backgroundColor: '#1e293b',
+    borderRadius: 8,
+    marginBottom: 10
+  },
+  itemName: {
+    fontSize: 18,
+    color: '#10b981',
+    fontWeight: 'bold'
+  },
+  itemDetails: {
+    fontSize: 14,
+    color: '#94a3b8',
+    marginTop: 5
+  }
+});

@@ -1,30 +1,21 @@
-import { colors } from '@/theme/colors'
-import { Stack } from 'expo-router'
-import {
-  useFonts,
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_700Bold,
-} from '@expo-google-fonts/inter'
-import { Loading } from '@/components/Loading'
+import { Stack } from 'expo-router';
+import { SQLiteProvider } from 'expo-sqlite';
+import { migrate } from '../database/migrate';
+import { Suspense } from 'react';
+import { ActivityIndicator, View } from 'react-native';
 
 export default function Layout() {
-  const [fontsLoaded] = useFonts({
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_700Bold,
-  })
-
-  if (!fontsLoaded) {
-    return <Loading />
-  }
-
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        contentStyle: { backgroundColor: colors.white },
-      }}
-    />
-  )
+    <Suspense 
+      fallback={
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0f172a' }}>
+          <ActivityIndicator size="large" color="#10b981" />
+        </View>
+      }
+    >
+      <SQLiteProvider databaseName="finances.db" onInit={migrate}>
+        <Stack screenOptions={{ headerShown: false }} />
+      </SQLiteProvider>
+    </Suspense>
+  );
 }
