@@ -1,90 +1,78 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, Button, FlatList, StyleSheet } from 'react-native';
-import { useTargetDatabase, Target } from '../database/useTargetDatabase';
+import { useCallback, useState } from 'react'
+import { View, Alert } from 'react-native'
+import { router, useFocusEffect } from 'expo-router'
+
+import { HomeHeader } from '@/components/HomeHeader'
+import { List } from '@/components/List'
+import { Summary } from '@/components/Summary'
+import { Target } from '@/components/Target'
+
+import { useTargetDatabase, Target as TargetType } from '@/database/useTargetDatabase'
 
 export default function Home() {
-  const targetDatabase = useTargetDatabase();
-  const [targets, setTargets] = useState<Target[]>([]);
+  const [targets, setTargets] = useState<TargetType[]>([])
+  const targetDatabase = useTargetDatabase()
 
-  async function loadData() {
+  const totalAccumulated = targets.reduce((acc, target) => acc + target.accumulated, 0)
+  const totalAmount = targets.reduce((acc, target) => acc + target.amount, 0)
+
+  async function fetchData() {
     try {
-      const data = await targetDatabase.getAll();
-      setTargets(data);
+      const data = await targetDatabase.getAll()
+      setTargets(data)
     } catch (error) {
-      console.error("Erro ao carregar dados:", error);
+      Alert.alert('Erro', 'Não foi possível carregar as metas.')
+      console.error(error)
     }
   }
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchData()
+    }, [])
+  )
 
-  async function handleAddTarget() {
-    try {
-      await targetDatabase.create("Comprar Carro", 50000);
-      loadData(); 
-    } catch (error) {
-      console.error("Erro ao inserir:", error);
-    }
-  }
-
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>As Minhas Metas</Text>
-      
-      <Button 
-        title="Adicionar Meta de Teste" 
-        onPress={handleAddTarget} 
-        color="#10b981" 
+return (
+  <View style={{ flex: 1, padding: 24, gap: 32, backgroundColor: '#0f172a' }}>
+    <HomeHeader />
+    
+    <View style={{ flexDirection: 'row', gap: 16 }}>
+      <Summary 
+        data={{ 
+          label: 'Acumulado', 
+          value: `R$ ${totalAccumulated.toFixed(2).replace('.', ',')}` 
+        }}
+        icon={{ name: 'account-balance-wallet', color: colors.green[500] || '#10b981' }}
       />
-      
-      <FlatList 
-        data={targets}
-        keyExtractor={(item) => String(item.id)}
-        style={{ marginTop: 20 }}
-        renderItem={({ item }) => (
-          <View style={styles.item}>
-            <Text style={styles.itemName}>{item.name}</Text>
-            <Text style={styles.itemDetails}>
-              Objetivo: {item.amount} | Acumulado: {item.accumulated}
-            </Text>
-          </View>
-        )}
+      <Summary 
+        isRight
+        data={{ 
+          label: 'Objetivo', 
+          value: `R$ ${totalAmount.toFixed(2).replace('.', ',')}` 
+        }}
+        icon={{ name: 'flag', color: colors.blue[500] || '#3b82f6' }}
       />
     </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    padding: 20, 
-    marginTop: 50,
-    backgroundColor: '#0f172a' 
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#f8fafc',
-    marginBottom: 20,
-    textAlign: 'center'
-  },
-  item: { 
-    padding: 15, 
-    borderBottomWidth: 1, 
-    borderColor: '#334155',
-    backgroundColor: '#1e293b',
-    borderRadius: 8,
-    marginBottom: 10
-  },
-  itemName: {
-    fontSize: 18,
-    color: '#10b981',
-    fontWeight: 'bold'
-  },
-  itemDetails: {
-    fontSize: 14,
-    color: '#94a3b8',
-    marginTop: 5
-  }
-});
+    
+    <List
+      title="Minhas metas"
+      data={targets}
+      renderItem={({ item }) => {
+        const percentageValue = item.amount > 0 ? Math.min((item.accumulated / item.amount) * 100, 100) : 0;
+        
+        return (
+          <Target
+            data={{
+              name: item.name,
+              current: `R$ ${item.accumulated.toFixed(2).replace('.', ',')}`,
+              target: `R$ ${item.amount.toFixed(2).replace('.', ',')}`,
+              percentage: `${percentageValue.toFixed(0)}%`,
+            }}
+            onPress={() => router.navigate(`/in-progress/${item.id}`)}
+          />
+        )
+      }}
+      emptyMessage="Nenhuma meta cadastrada. Que tal criar uma agora?"
+    />
+  </View>
+)
