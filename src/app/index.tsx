@@ -4,7 +4,6 @@ import { router, useFocusEffect } from 'expo-router'
 
 import { HomeHeader } from '@/components/HomeHeader'
 import { List } from '@/components/List'
-import { Summary } from '@/components/Summary'
 import { Target } from '@/components/Target'
 
 import { useTargetDatabase, Target as TargetType } from '@/database/useTargetDatabase'
@@ -32,47 +31,43 @@ export default function Home() {
     }, [])
   )
 
-return (
-  <View style={{ flex: 1, padding: 24, gap: 32, backgroundColor: '#0f172a' }}>
-    <HomeHeader />
-    
-    <View style={{ flexDirection: 'row', gap: 16 }}>
-      <Summary 
-        data={{ 
-          label: 'Acumulado', 
-          value: `R$ ${totalAccumulated.toFixed(2).replace('.', ',')}` 
+  return (
+    <View style={{ flex: 1, padding: 24, gap: 32, backgroundColor: '#0f172a' }}>
+      
+      <HomeHeader 
+        data={{
+          total: `R$ ${totalAccumulated.toFixed(2).replace('.', ',')}`,
+          input: { 
+            label: 'Acumulado', 
+            value: `R$ ${totalAccumulated.toFixed(2).replace('.', ',')}` 
+          },
+          output: { 
+            label: 'Objetivo final', 
+            value: `R$ ${totalAmount.toFixed(2).replace('.', ',')}` 
+          }
         }}
-        icon={{ name: 'account-balance-wallet', color: colors.green[500] || '#10b981' }}
       />
-      <Summary 
-        isRight
-        data={{ 
-          label: 'Objetivo', 
-          value: `R$ ${totalAmount.toFixed(2).replace('.', ',')}` 
+      
+      <List
+        title="Minhas metas"
+        data={targets}
+        renderItem={({ item }) => {
+          const percentageValue = item.amount > 0 ? Math.min((item.accumulated / item.amount) * 100, 100) : 0;
+          
+          return (
+            <Target
+              data={{
+                name: item.name,
+                current: `R$ ${item.accumulated.toFixed(2).replace('.', ',')}`,
+                target: `R$ ${item.amount.toFixed(2).replace('.', ',')}`,
+                percentage: `${percentageValue.toFixed(0)}%`,
+              }}
+              onPress={() => router.navigate(`/in-progress/${item.id}`)}
+            />
+          )
         }}
-        icon={{ name: 'flag', color: colors.blue[500] || '#3b82f6' }}
+        emptyMessage="Nenhuma meta cadastrada. Que tal criar uma agora?"
       />
     </View>
-    
-    <List
-      title="Minhas metas"
-      data={targets}
-      renderItem={({ item }) => {
-        const percentageValue = item.amount > 0 ? Math.min((item.accumulated / item.amount) * 100, 100) : 0;
-        
-        return (
-          <Target
-            data={{
-              name: item.name,
-              current: `R$ ${item.accumulated.toFixed(2).replace('.', ',')}`,
-              target: `R$ ${item.amount.toFixed(2).replace('.', ',')}`,
-              percentage: `${percentageValue.toFixed(0)}%`,
-            }}
-            onPress={() => router.navigate(`/in-progress/${item.id}`)}
-          />
-        )
-      }}
-      emptyMessage="Nenhuma meta cadastrada. Que tal criar uma agora?"
-    />
-  </View>
-)
+  )
+}

@@ -29,7 +29,7 @@ export default function Target() {
   }
 
   return (
-    <View style={{ flex: 1, padding: 24 }}>
+    <View style={{ flex: 1, padding: 24, backgroundColor: '#0f172a' }}>
       <PageHeader
         title="Meta"
         subtitle="Economize para alcançar sua meta financeira."
@@ -46,7 +46,7 @@ export default function Target() {
         <CurrencyInput 
           label="Valor alvo (R$)" 
           value={amount} 
-          onChangeValue={setAmount} 
+          onChangeValue={(value) => setAmount(value ?? 0)} 
         />
 
         <Button title="Salvar" onPress={handleSave} />
